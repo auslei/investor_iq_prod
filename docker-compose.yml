@@ -1,0 +1,95 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-prod
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - .data/qdrant:/qdrant/storage
+    restart: unless-stopped
+    networks:
+      - vdb_network
+
+  extraction-service:
+    image: auslei/investor_iq_extraction:latest
+    container_name: extraction-service-prod
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    environment:
+      - EXTRACTION_PORT=8001
+      - PYTHONPATH=/app
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - HF_HOME=/root/.cache/huggingface
+      - HUGGINGFACE_HUB_CACHE=/root/.cache/huggingface/hub
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .media_cache:/app/.media_cache
+      - .whisper_cache:/app/.whisper_cache
+      - .huggingface_cache:/root/.cache/huggingface
+      - ./config.yaml:/app/config.yaml
+      - ./projects:/app/projects      
+    restart: unless-stopped
+    networks:
+      - vdb_network
+
+  vectordb-service:
+    image: auslei/investor_iq_vectordb:latest
+    container_name: vectordb-service-prod
+    ports:
+      - "8002:8002"
+    env_file:
+      - .env
+    environment:
+      - VECTORDB_PORT=8002
+      - PYTHONPATH=/app
+      - QDRANT_URL=http://qdrant:6333
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - HF_HOME=/root/.cache/huggingface
+      - HUGGINGFACE_HUB_CACHE=/root/.cache/huggingface/hub
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - qdrant
+    volumes:
+      - .data/vectordb:/app/data/vectordb
+      - .huggingface_cache:/root/.cache/huggingface
+      - ./config.yaml:/app/config.yaml
+      - ./projects:/app/projects            
+    restart: unless-stopped
+    networks:
+      - vdb_network
+
+  core_app:
+    image: auslei/investor_iq_core_app:latest
+    container_name: investor_iq_core_app-prod
+    ports:
+      - "8180:8180"  # Webservice API
+      - "8190:8190"  # UI Server
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/app
+      - EXTRACTION_SERVICE_URL=http://extraction-service:8001
+      - VECTORDB_SERVICE_URL=http://vectordb-service:8002
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - extraction-service
+      - vectordb-service
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ./projects:/app/projects
+      - ./investment_data:/app/investment_data
+    restart: unless-stopped
+    networks:
+      - vdb_network
+
+networks:
+  vdb_network:
+    driver: bridge

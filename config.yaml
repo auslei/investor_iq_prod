@@ -1,0 +1,85 @@
+# Global Defaults
+project_dir: "projects"
+jwt_secret: "investor-iq-secret-key-2026"
+low_memory: false 
+
+# Core Application (UI & Agent) Configuration
+core_app:
+  company_name: "Investor IQ - Test App"
+  industry: "Investment"
+  language: "zh"
+  
+  users:
+    - id: "user1"
+      password: "user1!"
+      is_admin: false
+      session_count: 1
+      collections: ["*"]
+      allowed_models: ["ollama:*"]
+    - id: "admin"
+      password: "admin1!"
+      is_admin: true
+      session_count: 1
+      collections: ["*"]
+      allowed_models: ["*"]
+
+  chat:
+    llm:
+      # Smart model for synthesizing the final answer
+      generator:
+        provider: "deepseek"
+        model: "deepseek-chat"
+        temperature: 0.1
+        context_window: 32768
+      # Fast model for intent detection and metadata extraction
+      router:
+        provider: "ollama"
+        model: "qwen3:8b"
+        temperature: 0.0
+        context_window: 4096
+
+# Global Model Registry
+models_registry:
+  ollama:
+    - name: "qwen3:8b"
+      display_name: "Qwen 3 8B (Ollama)"
+    - name: "qwen3.5:9b"
+      display_name: "Qwen 3.5 9B (Ollama)"
+    - name: "qwen3:14b"
+      display_name: "Qwen 3 14B (Ollama)"
+    - name: "deepseek-r1:14b"
+      display_name: "DeepSeek R1 14B (Ollama)"
+
+# Background Services Configuration
+extraction:
+  ocr_model: "qwen3-vl:4b"
+  transcribe_model: "turbo"
+  ocr_dpi: 150
+  pdf_process_method: "liteparse" # types: OCR, liteparse, marker
+  language: "zh"
+
+vectordb:
+  qdrant:
+    url: "http://qdrant:6333"
+  embedding_model: "BAAI/bge-m3"
+  rerank_model: "BAAI/bge-reranker-v2-m3"
+  max_chunk_size: 1000
+  chunk_overlap: 200
+  transcript_window_seconds: 60
+  transcript_overlap_seconds: 15
+
+reporting:
+  default_template: "original_lite.json"
+  generate_pdf: true
+  llm:
+    provider: "ollama"
+    model: "qwen3:14b"
+    temperature: 0.0
+    context_window: 65536
+
+podcast:
+  llm:
+    provider: "ollama"
+    model: "qwen3:14b"
+    temperature: 0.7
+    context_window: 65536
