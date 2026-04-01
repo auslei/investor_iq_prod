@@ -3,8 +3,8 @@ services:
     image: qdrant/qdrant:latest
     container_name: qdrant-prod
     ports:
-      - "6333:6333"
-      - "6334:6334"
+      - "${QDRANT_PORT_MAIN}:6333"
+      - "${QDRANT_PORT_GRPC}:6334"
     volumes:
       - .data/qdrant:/qdrant/storage
     restart: unless-stopped
@@ -15,14 +15,14 @@ services:
     image: auslei/investor_iq_extraction:latest
     container_name: extraction-service-prod
     ports:
-      - "8001:8001"
+      - "${EXTRACTION_PORT}:8001"
     env_file:
       - .env
     environment:
-      - EXTRACTION_PORT=8001
+      - EXTRACTION_PORT=${EXTRACTION_PORT}
       - PYTHONPATH=/app
-      - OLLAMA_URL=http://host.docker.internal:11434
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_URL=${OLLAMA_URL}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
       - HF_HOME=/root/.cache/huggingface
       - HUGGINGFACE_HUB_CACHE=/root/.cache/huggingface/hub
     extra_hosts:
@@ -31,8 +31,8 @@ services:
       - .media_cache:/app/.media_cache
       - .whisper_cache:/app/.whisper_cache
       - .huggingface_cache:/root/.cache/huggingface
-      - ./config.yaml:/app/config.yaml
-      - ./projects:/app/projects      
+      - ./${CONFIG_PATH}:/app/config.yaml
+      - ./${PROJECTS_PATH}:/app/projects
     restart: unless-stopped
     networks:
       - vdb_network
@@ -41,14 +41,14 @@ services:
     image: auslei/investor_iq_vectordb:latest
     container_name: vectordb-service-prod
     ports:
-      - "8002:8002"
+      - "${VECTORDB_PORT}:8002"
     env_file:
       - .env
     environment:
-      - VECTORDB_PORT=8002
+      - VECTORDB_PORT=${VECTORDB_PORT}
       - PYTHONPATH=/app
       - QDRANT_URL=http://qdrant:6333
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
       - HF_HOME=/root/.cache/huggingface
       - HUGGINGFACE_HUB_CACHE=/root/.cache/huggingface/hub
     extra_hosts:
@@ -58,8 +58,8 @@ services:
     volumes:
       - .data/vectordb:/app/data/vectordb
       - .huggingface_cache:/root/.cache/huggingface
-      - ./config.yaml:/app/config.yaml
-      - ./projects:/app/projects            
+      - ./${CONFIG_PATH}:/app/config.yaml
+      - ./${PROJECTS_PATH}:/app/projects
     restart: unless-stopped
     networks:
       - vdb_network
@@ -68,23 +68,24 @@ services:
     image: auslei/investor_iq_core_app:latest
     container_name: investor_iq_core_app-prod
     ports:
-      - "8180:8180"  # Webservice API
-      - "8190:8190"  # UI Server
+      - "${CORE_APP_API_PORT}:8180"  # Webservice API
+      - "${CORE_APP_UI_PORT}:8190"  # UI Server
     env_file:
       - .env
     environment:
       - PYTHONPATH=/app
-      - EXTRACTION_SERVICE_URL=http://extraction-service:8001
-      - VECTORDB_SERVICE_URL=http://vectordb-service:8002
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - EXTRACTION_SERVICE_URL=${EXTRACTION_SERVICE_URL}
+      - VECTORDB_SERVICE_URL=${VECTORDB_SERVICE_URL}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - PROJECTS_BASE_DIR=/app/projects
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - extraction-service
       - vectordb-service
     volumes:
-      - ./config.yaml:/app/config.yaml
-      - ./projects:/app/projects
+      - ./${CONFIG_PATH}:/app/config.yaml
+      - ./${PROJECTS_PATH}:/app/projects
       - ./investment_data:/app/investment_data
     restart: unless-stopped
     networks:

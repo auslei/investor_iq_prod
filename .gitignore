@@ -2,3 +2,7 @@
 projects
 .env
 .data
+.media_cache
+.whisper_cache
+investment_data
+.huggingface_cache

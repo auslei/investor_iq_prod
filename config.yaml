@@ -27,8 +27,8 @@ core_app:
     llm:
       # Smart model for synthesizing the final answer
       generator:
-        provider: "deepseek"
-        model: "deepseek-chat"
+        provider: "ollama"
+        model: "qwen3:8b"
         temperature: 0.1
         context_window: 32768
       # Fast model for intent detection and metadata extraction
@@ -63,6 +63,8 @@ vectordb:
     url: "http://qdrant:6333"
   embedding_model: "BAAI/bge-m3"
   rerank_model: "BAAI/bge-reranker-v2-m3"
+  mmr: true
+  diversity: 0.6
   max_chunk_size: 1000
   chunk_overlap: 200
   transcript_window_seconds: 60
